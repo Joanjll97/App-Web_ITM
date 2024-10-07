@@ -1,0 +1,66 @@
+is_global = true
+build_property.EnableAotAnalyzer = 
+build_property.EnableSingleFileAnalyzer = 
+build_property.EnableTrimAnalyzer = false
+build_property.IncludeAllContentForSelfExtract = 
+build_property.MudDebugAnalyzer = 
+build_property.MudAllowedAttributePattern = 
+build_property.MudIllegalParameters = 
+build_property.TargetFramework = net8.0
+build_property.TargetPlatformMinVersion = 
+build_property.UsingMicrosoftNETSdkWeb = 
+build_property.ProjectTypeGuids = 
+build_property.InvariantGlobalization = false
+build_property.PlatformNeutralAssembly = 
+build_property.EnforceExtendedAnalyzerRules = 
+build_property._SupportedPlatformList = browser
+build_property.RootNamespace = BlazorFrontEnd
+build_property.RootNamespace = BlazorFrontEnd
+build_property.ProjectDir = C:\Users\jjarami\Documents\Jhoann\proyectosVSCODE\BlazorFrontEnd\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = false
+build_property.RazorLangVersion = 8.0
+build_property.SupportLocalizedComponentNames = 
+build_property.GenerateRazorMetadataSourceChecksumAttributes = 
+build_property.MSBuildProjectDirectory = C:\Users\jjarami\Documents\Jhoann\proyectosVSCODE\BlazorFrontEnd
+build_property._RazorSourceGeneratorDebug = 
+
+[C:/Users/jjarami/Documents/Jhoann/proyectosVSCODE/BlazorFrontEnd/App.razor]
+build_metadata.AdditionalFiles.TargetPath = QXBwLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/jjarami/Documents/Jhoann/proyectosVSCODE/BlazorFrontEnd/Pages/Counter.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcQ291bnRlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/jjarami/Documents/Jhoann/proyectosVSCODE/BlazorFrontEnd/Pages/Home.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcSG9tZS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/jjarami/Documents/Jhoann/proyectosVSCODE/BlazorFrontEnd/Pages/ListTable.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcTGlzdFRhYmxlLnJhem9y
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/jjarami/Documents/Jhoann/proyectosVSCODE/BlazorFrontEnd/Pages/Persona.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcUGVyc29uYS5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/jjarami/Documents/Jhoann/proyectosVSCODE/BlazorFrontEnd/Pages/Universidades.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcVW5pdmVyc2lkYWRlcy5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/jjarami/Documents/Jhoann/proyectosVSCODE/BlazorFrontEnd/Pages/Weather.razor]
+build_metadata.AdditionalFiles.TargetPath = UGFnZXNcV2VhdGhlci5yYXpvcg==
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/jjarami/Documents/Jhoann/proyectosVSCODE/BlazorFrontEnd/_Imports.razor]
+build_metadata.AdditionalFiles.TargetPath = X0ltcG9ydHMucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = 
+
+[C:/Users/jjarami/Documents/Jhoann/proyectosVSCODE/BlazorFrontEnd/Layout/MainLayout.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XE1haW5MYXlvdXQucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-msf2p0x9on
+
+[C:/Users/jjarami/Documents/Jhoann/proyectosVSCODE/BlazorFrontEnd/Layout/NavMenu.razor]
+build_metadata.AdditionalFiles.TargetPath = TGF5b3V0XE5hdk1lbnUucmF6b3I=
+build_metadata.AdditionalFiles.CssScope = b-9m9x83kvrv

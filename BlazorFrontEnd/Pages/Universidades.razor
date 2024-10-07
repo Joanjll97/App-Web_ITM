@@ -1,0 +1,313 @@
+@page "/universidades"
+
+@using System.Net.Http.Json
+@using BlazorFrontEnd.Services
+@inject ApiService ApiService
+@inject IJSRuntime JSRuntime
+
+<h3>Consulta Universidades</h3>
+
+<div>
+    <label>Código de la Universidad:</label>
+    <input @bind="consultaCodigo" />
+    <button @onclick="ConsultarUniversidad">Consultar</button>
+    <button @onclick="ClearConsulta">Limpiar Consulta</button>
+</div>
+
+@if (universidadEncontrada)
+{
+    <div>
+        <h4>Información de la Universidad</h4>
+        <p><strong>Nombre:</strong> @consultaNombre</p>
+        <p><strong>Tipo:</strong> @consultaTipo</p>
+        <p><strong>Ciudad:</strong> @consultaCiudad</p>
+        <button @onclick="ModificarUniversidadConsultada">Modificar</button>
+        <button @onclick="EliminarUniversidadConsultada">Eliminar</button>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(consultaCodigo))
+{
+    <p>No se encontró ninguna universidad con ese código.</p>
+}
+
+<h4>Historial de Consultas</h4>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Ciudad</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!historialConsultas.Any())
+        {
+            <tr>
+                <td colspan="4">No hay historial de consultas.</td>
+            </tr>
+        }
+        else
+        {
+            foreach (var consulta in historialConsultas)
+            {
+                <tr>
+                    <td>@consulta.Codigo</td>
+                    <td>@consulta.Nombre</td>
+                    <td>@consulta.Tipo</td>
+                    <td>@consulta.Ciudad</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<!-- Botón para Añadir Nueva Universidad -->
+<button @onclick="ShowAddModal">Añadir Nueva Universidad</button>
+
+<!-- Botones de Paginación -->
+<div>
+    <button @onclick="PreviousPage" disabled="@(!CanGoToPreviousPage)">Anterior</button>
+    <button @onclick="NextPage" disabled="@(!CanGoToNextPage)">Siguiente</button>
+</div>
+
+<!-- Modal para Añadir/Modificar Universidad -->
+<div class="modal" style="@(isNewUniversidad ? "display:none" : "display:block")">
+    <div class="modal-content">
+        <span class="close" @onclick="CloseModal">&times;</span>
+        <h3>@(isNewUniversidad ? "Añadir Universidad" : "Modificar Universidad")</h3>
+        <label>Código:</label>
+        <input @bind="codigo" />
+        <label>Nombre:</label>
+        <input @bind="nombre" />
+        <label>Tipo:</label>
+        <input @bind="tipo" />
+        <label>Ciudad:</label>
+        <input @bind="ciudad" />
+        <button @onclick="SaveUniversidad">@if (isNewUniversidad) { <text>Añadir</text> } else { <text>Modificar</text> }</button>
+        <button @onclick="ClearFields">Cancelar</button>
+    </div>
+</div>
+
+
+<!-- Modal para Añadir/Modificar Universidad -->
+<div class="modal" style="@(isNewUniversidad ? "display:none" : "display:block")">
+    <div class="modal-content">
+        <span class="close" @onclick="CloseModal">&times;</span>
+        <h3>@(isNewUniversidad ? "Añadir Universidad" : "Modificar Universidad")</h3>
+        <label>Código:</label>
+        <input @bind="codigo" />
+        <label>Nombre:</label>
+        <input @bind="nombre" />
+        <label>Tipo:</label>
+        <input @bind="tipo" />
+        <label>Ciudad:</label>
+        <input @bind="ciudad" />
+        <button @onclick="SaveUniversidad">@if (isNewUniversidad) { <text>Añadir</text> } else { <text>Modificar</text> }</button>
+        <button @onclick="ClearFields">Cancelar</button>
+    </div>
+</div>
+
+@code {
+    private List<Dictionary<string, object>> universidades = new();
+    private bool isNewUniversidad = true;
+    private bool universidadEncontrada = false;
+
+    private string codigo = string.Empty;
+    private string nombre = string.Empty;
+    private string tipo = string.Empty;
+    private string ciudad = string.Empty;
+
+    private string consultaCodigo = string.Empty;
+    private string consultaNombre = string.Empty;
+    private string consultaTipo = string.Empty;
+    private string consultaCiudad = string.Empty;
+
+    private List<ConsultaHistorial> historialConsultas = new();
+    private int currentPage = 1;
+    private const int pageSize = 10; 
+    private bool CanGoToPreviousPage => currentPage > 1;
+    private bool CanGoToNextPage => universidades.Count == pageSize;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUniversidades();
+    }
+
+    private async Task LoadUniversidades()
+    {
+        try
+        {
+            universidades = await ApiService.GetDataAsync($"api/proyecto/universidad?page={currentPage}&size={pageSize}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al cargar universidades: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Error al cargar universidades. Por favor, intente nuevamente.");
+        }
+    }
+
+    private async Task ConsultarUniversidad()
+    {
+        try
+        {
+            var resultado = await ApiService.GetDataAsync($"api/proyecto/universidad/id/{consultaCodigo}");
+            if (resultado.Any())
+            {
+                var universidadConsultada = resultado.First();
+                consultaNombre = universidadConsultada["nombre"]?.ToString() ?? string.Empty;
+                consultaTipo = universidadConsultada["tipo"]?.ToString() ?? string.Empty;
+                consultaCiudad = universidadConsultada["ciudad"]?.ToString() ?? string.Empty;
+                universidadEncontrada = true;
+
+                // Agregar a historial
+                historialConsultas.Add(new ConsultaHistorial
+                {
+                    Codigo = consultaCodigo,
+                    Nombre = consultaNombre,
+                    Tipo = consultaTipo,
+                    Ciudad = consultaCiudad
+                });
+            }
+            else
+            {
+                ClearConsulta();
+                await JSRuntime.InvokeVoidAsync("alert", "No se encontró ninguna universidad con ese código.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al consultar universidad: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Error al consultar la universidad. Por favor, intente nuevamente.");
+        }
+    }
+
+    private async Task SaveUniversidad()
+    {
+        // Validación de campos
+        if (string.IsNullOrWhiteSpace(codigo) || string.IsNullOrWhiteSpace(nombre) ||
+            string.IsNullOrWhiteSpace(tipo) || string.IsNullOrWhiteSpace(ciudad))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Todos los campos son obligatorios.");
+            return; // Salir si hay campos vacíos
+        }
+
+        try
+        {
+            // Capturar todos los registros en un solo diccionario
+            var universidadData = new Dictionary<string, object>
+            {
+                { "nombre", nombre },
+                { "tipo", tipo },
+                { "ciudad", ciudad }
+            };
+
+            bool success;
+            
+            // Enviar todos los datos en una sola llamada a la API
+            if (isNewUniversidad)
+            {
+                success = await ApiService.AddEntityAsync("api/proyecto/universidad", universidadData);
+            }
+            else
+            {
+                success = await ApiService.EditEntityAsync("api/proyecto/universidad/id",codigo, universidadData);
+            }
+
+            if (success)
+            {
+                await LoadUniversidades();
+                ClearFields();
+                await JSRuntime.InvokeVoidAsync("alert", "Se modifica de manera correcta la Universidad.");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Error al guardar la universidad. Por favor, intente nuevamente.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al guardar universidad: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Error al guardar la universidad. Por favor, intente nuevamente.");
+        }
+    }
+
+    private void CloseModal()
+    {
+        ClearFields();
+    }
+
+    private async Task ShowAddModal()
+    {
+        ClearFields();
+        isNewUniversidad = true; // Asegúrate de que el modal se abra en modo añadir
+        await JSRuntime.InvokeVoidAsync("showModal", "addUniversidadModal");
+    }
+
+    private async Task ModificarUniversidadConsultada()
+    {
+        isNewUniversidad = false;
+        codigo = consultaCodigo;
+        nombre = consultaNombre;
+        tipo = consultaTipo;
+        ciudad = consultaCiudad;
+
+        await JSRuntime.InvokeVoidAsync("showModal", "editUniversidadModal");
+    }
+
+    private async Task EliminarUniversidadConsultada()
+    {
+        if (string.IsNullOrWhiteSpace(consultaCodigo)) return;
+
+        bool success = await ApiService.DeleteEntityAsync("api/proyecto/universidad/id", consultaCodigo);
+        if (success)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Universidad eliminada con éxito.");
+            await LoadUniversidades();
+            ClearFields();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Error al eliminar la universidad. Por favor, intente nuevamente.");
+        }
+    }
+
+    private void ClearFields()
+    {
+        codigo = string.Empty;
+        nombre = string.Empty;
+        tipo = string.Empty;
+        ciudad = string.Empty;
+        isNewUniversidad = true;
+        universidadEncontrada = false;
+    }
+
+    private void ClearConsulta()
+    {
+        consultaCodigo = string.Empty;
+        ClearFields();
+    }
+
+    private async Task NextPage()
+    {
+        currentPage++;
+        await LoadUniversidades();
+    }
+
+    private async Task PreviousPage()
+    {
+        if (CanGoToPreviousPage)
+        {
+            currentPage--;
+            await LoadUniversidades();
+        }
+    }
+
+    public class ConsultaHistorial
+    {
+        public string Codigo { get; set; }
+        public string Nombre { get; set; }
+        public string Tipo { get; set; }
+        public string Ciudad { get; set; }
+    }
+}
