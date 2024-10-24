@@ -1,0 +1,105 @@
+@page "/carreradeinnovacion"
+
+@using System.Net.Http.Json
+@using BlazorFrontEnd.Services
+@inject ApiService ApiService
+@inject IJSRuntime JSRuntime
+
+<h3>Carreras de Innovación</h3>
+
+@if (carreras != null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nombre de Innovación</th>
+                <th>Nombre de Programa</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (carreras.Any())
+            {
+                foreach (var carrera in carreras)
+                {
+                    <tr>
+                        <td>@carrera["nombreInnovacion"]?.ToString()</td>
+                        <td>@carrera["nombrePrograma"]?.ToString()</td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="2">No se encontraron carreras de innovación.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+else
+{
+    <p>Cargando...</p>
+}
+
+@code {
+    private List<Dictionary<string, object>> carreras = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ConsultarCarrerasInnovacion();
+    }
+
+    private async Task ConsultarCarrerasInnovacion()
+    {
+        try
+        {
+            // Primero, obtenemos todas las carreras de innovación
+            var resultadoCarreras = await ApiService.GetDataAsync("api/proyecto/car_innovacion");
+            if (resultadoCarreras != null && resultadoCarreras.Any())
+            {
+                foreach (var carrera in resultadoCarreras)
+                {
+                    var carreraId = carrera["id"]?.ToString(); // Suponiendo que "id" es el campo de identificación en car_innovacion
+                    var nombreInnovacion = carrera["nombre"]?.ToString();
+
+                    string nombrePrograma = string.Empty;
+
+                    // Si hay un ID de carrera, consultamos la tabla intermedia programa_ci
+                    if (!string.IsNullOrWhiteSpace(carreraId))
+                    {
+                        var resultadoProgramaCi = await ApiService.GetDataAsync($"api/proyecto/programa_ci/car_innovacion/{carreraId}");
+                        if (resultadoProgramaCi != null && resultadoProgramaCi.Any())
+                        {
+                            // Suponiendo que el resultado contiene un campo "programa" que se relaciona con el programa
+                            var programaId = resultadoProgramaCi.First()["programa"]?.ToString();
+                            if (!string.IsNullOrWhiteSpace(programaId))
+                            {
+                                var resultadoPrograma = await ApiService.GetDataAsync($"api/proyecto/programa/id/{programaId}");
+                                if (resultadoPrograma.Any())
+                                {
+                                    nombrePrograma = resultadoPrograma.First()["nombre"]?.ToString() ?? "Nombre no encontrado";
+                                }
+                            }
+                        }
+                    }
+
+                    // Agregar la carrera y el programa al listado
+                    carreras.Add(new Dictionary<string, object>
+                    {
+                        { "nombreInnovacion", nombreInnovacion },
+                        { "nombrePrograma", nombrePrograma }
+                    });
+                }
+            }
+            else
+            {
+                carreras = new List<Dictionary<string, object>>(); // No se encontraron carreras
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al consultar carreras de innovación: {ex.Message}");
+            await JSRuntime.InvokeVoidAsync("alert", "Error al consultar las carreras de innovación. Por favor, intente nuevamente.");
+        }
+    }
+}

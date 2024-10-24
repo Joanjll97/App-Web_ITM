@@ -485,11 +485,163 @@ namespace ProyectoBackendCsharp.Controllers
             }
         }
 
+      /*  [AllowAnonymous] // Permite el acceso anónimo a este método.
+        [HttpGet("{keyName}/{value}")] // Define una ruta HTTP GET con parámetros adicionales.
+        public IActionResult GetByKey(string projectName, string tableName, string keyName, string value, string includeProperties = null) // Método que obtiene una fila específica basada en una clave.
+        {
+            if (string.IsNullOrWhiteSpace(tableName) || string.IsNullOrWhiteSpace(keyName) || string.IsNullOrWhiteSpace(value)) // Verifica si alguno de los parámetros está vacío.
+            {
+                return BadRequest("El nombre de la tabla, el nombre de la clave y el valor no pueden estar vacíos."); // Retorna una respuesta de error si algún parámetro está vacío.
+            }
+
+            controlConexion.AbrirBd(); // Abre la conexión a la base de datos.
+            try
+            {
+                string provider = _configuration["DatabaseProvider"] ?? throw new InvalidOperationException("DatabaseProvider not configured."); // Obtiene el proveedor de base de datos desde la configuración.
+                
+                string query;
+                DbParameter[] parameters;
+                
+                // Define la consulta SQL y los parámetros para SQL Server y LocalDB.
+                query = "SELECT data_type FROM information_schema.columns WHERE table_name = @tableName AND column_name = @columnName";
+                parameters = new DbParameter[] { CreateParameter("@tableName", tableName), CreateParameter("@columnName", keyName) };
+
+                var dataTypeResult = controlConexion.EjecutarConsultaSql(query, parameters); // Ejecuta la consulta SQL para determinar el tipo de dato de la clave.
+
+                if (dataTypeResult == null || dataTypeResult.Rows.Count == 0 || dataTypeResult.Rows[0]["data_type"] == DBNull.Value) // Verifica si se obtuvo un resultado válido.
+                {
+                    return NotFound("No se pudo determinar el tipo de dato."); // Retorna una respuesta de error si no se pudo determinar el tipo de dato.
+                }
+
+                string dataType = dataTypeResult.Rows[0]["data_type"]?.ToString() ?? ""; // Obtiene el tipo de dato de la columna.
+
+                if (string.IsNullOrEmpty(dataType)) // Verifica si el tipo de dato es válido.
+                {
+                    return NotFound("No se pudo determinar el tipo de dato."); // Retorna una respuesta de error si el tipo de dato es inválido.
+                }
+
+                object convertedValue;
+                string comandoSQL;
+
+                // Determina cómo tratar el valor y la consulta SQL según el tipo de dato, compatible con SQL Server y LocalDB.
+                switch (dataType.ToLower())
+                {
+                    case "int":
+                    case "bigint":
+                    case "smallint":
+                    case "tinyint":
+                        if (int.TryParse(value, out int intValue))
+                        {
+                            convertedValue = intValue;
+                            comandoSQL = $"SELECT * FROM {tableName} WHERE {keyName} = @Value";
+                        }
+                        else
+                        {
+                            return BadRequest("El valor proporcionado no es válido para el tipo de datos entero.");
+                        }
+                        break;
+                    case "decimal":
+                    case "numeric":
+                    case "money":
+                    case "smallmoney":
+                        if (decimal.TryParse(value, out decimal decimalValue))
+                        {
+                            convertedValue = decimalValue;
+                            comandoSQL = $"SELECT * FROM {tableName} WHERE {keyName} = @Value";
+                        }
+                        else
+                        {
+                            return BadRequest("El valor proporcionado no es válido para el tipo de datos decimal.");
+                        }
+                        break;
+                    case "bit":
+                        if (bool.TryParse(value, out bool boolValue))
+                        {
+                            convertedValue = boolValue;
+                            comandoSQL = $"SELECT * FROM {tableName} WHERE {keyName} = @Value";
+                        }
+                        else
+                        {
+                            return BadRequest("El valor proporcionado no es válido para el tipo de datos booleano.");
+                        }
+                        break;
+                    case "float":
+                    case "real":
+                        if (double.TryParse(value, out double doubleValue))
+                        {
+                            convertedValue = doubleValue;
+                            comandoSQL = $"SELECT * FROM {tableName} WHERE {keyName} = @Value";
+                        }
+                        else
+                        {
+                            return BadRequest("El valor proporcionado no es válido para el tipo de datos flotante.");
+                        }
+                        break;
+                    case "nvarchar":
+                    case "varchar":
+                    case "nchar":
+                    case "char":
+                    case "text":
+                        convertedValue = value;
+                        comandoSQL = $"SELECT * FROM {tableName} WHERE {keyName} = @Value";
+                        break;
+                    case "date":
+                    case "datetime":
+                    case "datetime2":
+                    case "smalldatetime":
+                        if (DateTime.TryParse(value, out DateTime dateValue))
+                        {
+                            comandoSQL = $"SELECT * FROM {tableName} WHERE CAST({keyName} AS DATE) = @Value";
+                            convertedValue = dateValue.Date;
+                        }
+                        else
+                        {
+                            return BadRequest("El valor proporcionado no es válido para el tipo de datos fecha.");
+                        }
+                        break;
+                    default:
+                        return BadRequest($"Tipo de dato no soportado: {dataType}"); // Retorna un error si el tipo de dato no es soportado.
+                }
+
+                var parametro = CreateParameter("@Value", convertedValue); // Crea el parámetro para la consulta SQL.
+
+                // Agregar lógica para incluir propiedades relacionadas
+                if (!string.IsNullOrWhiteSpace(includeProperties))
+                {
+                    comandoSQL = $"SELECT * FROM {tableName} LEFT JOIN {includeProperties} ON {tableName}.{keyName} = {includeProperties}.ForeignKey WHERE {tableName}.{keyName} = @Value";
+                }
+
+                var resultado = controlConexion.EjecutarConsultaSql(comandoSQL, new DbParameter[] { parametro }); // Ejecuta la consulta SQL con el parámetro.
+
+                if (resultado.Rows.Count > 0) // Verifica si se encontraron resultados.
+                {
+                    var propiedades = resultado.Rows.Cast<DataRow>()
+                            .Select(row => row.Table.Columns.Cast<DataColumn>()
+                            .ToDictionary(col => col.ColumnName, col => row[col] == DBNull.Value ? null : row[col])) // Convierte el resultado a un diccionario.
+                            .ToList(); // Convierte el enumerable en una lista.
+
+                    return Ok(propiedades); // Retorna el resultado en formato JSON.
+                }
+
+                return NotFound("No se encontró la entidad especificada."); // Retorna un mensaje de error si no se encontró la entidad.
+            }
+            catch (Exception ex) // Captura cualquier excepción que ocurra durante la ejecución.
+            {
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}"); // Retorna una respuesta de error 500 con el mensaje de la excepción.
+            }
+            finally
+            {
+                controlConexion.CerrarBd(); // Asegura que la conexión se cierra en el bloque finally.
+            }
+        }*/
+
         // Método para crear un parámetro de consulta SQL basado en el proveedor de base de datos.
         public DbParameter CreateParameter(string name, object? value)
         {
             return new SqlParameter(name, value ?? DBNull.Value); // Crea un parámetro para SQL Server y LocalDB.
         }
+
+        
     }
 }
 /*
